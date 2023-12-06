@@ -27,3 +27,18 @@ ans_part1 = prod(ways_to_win.(times, distances))
 
 total_time = parse(Int, reduce(*, map(x->string(x), times)))
 total_distance = parse(Int, reduce(*, map(x->string(x), distances)))
+
+ans_part2 = prod(ways_to_win.(total_time, total_distance))
+
+# Elegant ways
+
+function quadratic_root(max_time::Int, record::Int)
+    a = 1
+    b = -max_time
+    c = record
+    roots = ceil((-b + sqrt(b^2 - 4*a*c)) / (2*a)), ceil((-b - sqrt(b^2 - 4*a*c)) / (2*a))
+    return roots[1] - roots[2]
+end
+
+ans_part1 = prod(quadratic_root.(times, distances))
+ans_part2 = prod(quadratic_root.(total_time, total_distance))
