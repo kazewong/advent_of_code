@@ -98,6 +98,20 @@ end
 
 function shake_pattern(pattern::Vector{entry})
     output = deepcopy(pattern)
-    
+    output = roll_pattern(output, 2)
+    output = roll_pattern(output, 1)
+    output = roll_pattern(output, 2, true)
+    output = roll_pattern(output, 1, true)
     return output
+end
+
+function print_pattern(pattern::Vector{entry})
+    print_dict = Dict{Int, Char}(0 => '#', 1 => 'O', 2 => '.')
+    for i in 1:maximum(map(x->x.location[2], pattern))
+        line = filter(x->x.location[2]==i, pattern)
+        index = sortperm(map(x->x.location, line))
+        line = line[index]
+        type = map(x->print_dict[x.type], line)
+        println(type)
+    end
 end
