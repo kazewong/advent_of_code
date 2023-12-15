@@ -1,12 +1,12 @@
 # data = readlines("./solutions/day14/input.txt")
 data = readlines("./solutions/day14/test_input.txt")
 
-input_dict = Dict{Char, Int}('#' => 0, 'O' => 1, '.' => 2)
+input_dict = Dict{Char,Int}('#' => 0, 'O' => 1, '.' => 2)
 
 function parse_data(data::Vector{String})
     output = Matrix{Int}(undef, length(data), length(data[1]))
     for (index, line) in enumerate(data)
-        output[index, :] = map(x->input_dict[x], collect(line))
+        output[index, :] = map(x -> input_dict[x], collect(line))
     end
 
     return vcat(zeros(Int, 1, length(data[1])), output, zeros(Int, 1, length(data[1])))
@@ -19,10 +19,10 @@ pattern = parse_data(data)
 function find_load_line(line::AbstractVector)
     line_length = length(line)
     load = 0
-    pound_location = line_length + 1 .- (findall(x->x==0, line)) 
-    rock_location = line_length +1 .- (findall(x->x==1, line))
+    pound_location = line_length + 1 .- (findall(x -> x == 0, line))
+    rock_location = line_length + 1 .- (findall(x -> x == 1, line))
     for index in 1:length(pound_location)-1
-        n_rock = length(findall(x->(x<pound_location[index]) && (x>pound_location[index+1]), rock_location))
+        n_rock = length(findall(x -> (x < pound_location[index]) && (x > pound_location[index+1]), rock_location))
         for i in 0:n_rock-1
             load += pound_location[index] - 2 - i
         end
@@ -30,7 +30,7 @@ function find_load_line(line::AbstractVector)
     return load
 end
 
-part1_ans = sum(map(x->find_load_line(x), collect(eachcol(pattern))))
+part1_ans = sum(map(x -> find_load_line(x), collect(eachcol(pattern))))
 
 # Part 2 Let's go hardcore on this one
 
@@ -49,22 +49,22 @@ function isless(entry1::entry, entry2::entry, dir_x::Int)
 end
 
 function parse_data_part2(data::Vector{String})
-    index = 0
+    index = 1
     block_length = length(data)
     output = Vector{entry}()
     for i in 1:length(data[1])+2
         push!(output, entry(index, [i, 1], 0))
-        push!(output, entry(index+1, [i, length(data[1])+2], 0))
+        push!(output, entry(index + 1, [i, length(data[1]) + 2], 0))
         index += 2
     end
     for i in 2:block_length+1
-        push!(output, entry(index,[1, i], 0))
-        push!(output, entry(index+1,[length(data)+2, i], 0))
+        push!(output, entry(index, [1, i], 0))
+        push!(output, entry(index + 1, [length(data) + 2, i], 0))
         index += 2
     end
     for (i, line) in enumerate(data)
-        for (j,element) in enumerate(line)
-            push!(output, entry(index,[j+1, i+1], input_dict[element]))
+        for (j, element) in enumerate(line)
+            push!(output, entry(index, [j + 1, i + 1], input_dict[element]))
             index += 1
         end
     end
@@ -75,10 +75,10 @@ pattern = parse_data_part2(data)
 
 function roll_line(line::AbstractVector, dir_x::Int, reverse::Bool=false)
     output = deepcopy(line)
-    pound_location = sort(map(x->x.location,line[(findall(x->x.type==0, line))]))
+    pound_location = sort(map(x -> x.location, line[(findall(x -> x.type == 0, line))]))
     for index in 1:length(pound_location)-1
-        entries = output[findall(x->(x.location[dir_x]>pound_location[index][dir_x]) && (x.location[dir_x]<pound_location[index+1][dir_x]), line)]
-        new_index = sortperm(entries, lt=(x,y)->isless(x,y,dir_x), rev=reverse)
+        entries = output[findall(x -> (x.location[dir_x] > pound_location[index][dir_x]) && (x.location[dir_x] < pound_location[index+1][dir_x]), line)]
+        new_index = sortperm(entries, lt=(x, y) -> isless(x, y, dir_x), rev=reverse)
         for (i, ind) in enumerate(new_index)
             entries[ind].location[dir_x] = pound_location[index][dir_x] + i
         end
@@ -88,10 +88,10 @@ end
 
 function roll_pattern(pattern::Vector{entry}, dir_x::Int, reverse::Bool=false)
     output = deepcopy(pattern)
-    for i in 2:maximum(map(x->x.location[dir_x], output))-1
-        line = filter(x->x.location[2-dir_x+1]==i, output)
+    for i in 2:maximum(map(x -> x.location[dir_x], output))-1
+        line = filter(x -> x.location[2-dir_x+1] == i, output)
         line = roll_line(line, dir_x, reverse)
-        output[findall(x->x.index in map(y->y.index, line), output)] = line
+        output[findall(x -> x.index in map(y -> y.index, line), output)] = line
     end
     return output
 end
@@ -108,27 +108,33 @@ using Memoize
 end
 
 function print_pattern(pattern::Vector{entry})
-    print_dict = Dict{Int, Char}(0 => '#', 1 => 'O', 2 => '.')
-    for i in 1:maximum(map(x->x.location[2], pattern))
-        line = filter(x->x.location[2]==i, pattern)
-        index = sortperm(map(x->x.location, line))
+    print_dict = Dict{Int,Char}(0 => '#', 1 => 'O', 2 => '.')
+    for i in 1:maximum(map(x -> x.location[2], pattern))
+        line = filter(x -> x.location[2] == i, pattern)
+        index = sortperm(map(x -> x.location, line))
         line = line[index]
-        type = map(x->print_dict[x.type], line)
+        type = map(x -> print_dict[x.type], line)
         println(join(type))
     end
 end
 
 function evolve_pattern(pattern::Vector{entry})
     output = deepcopy(pattern)
-    new_output = shake_pattern(deepcopy(pattern))
-    # while !all(map((x,y)->(x.location==y.location), new_output, output))
-    for i in 1:20
-        temp_output = shake_pattern(new_output)
-        output = new_output
-        new_output = temp_output
+    output_dict = Vector{Vector{entry}}()
+    push!(output_dict, output)
+    loop = true
+    while loop
+        temp_output = shake_pattern(output)
+        if temp_output in output_dict
+            loop = false
+        end
+        push!(output_dict, temp_output)
+        output = temp_output
     end
-    return new_output
+    return findall(x -> x == output, output_dict), output_dict
 end
+
+output = evolve_pattern(pattern)
 
 import Base: +
 import Base: ==
@@ -141,6 +147,8 @@ function +(pattern::Vector{entry}, n::Int)
     return pattern
 end
 
-function ==(pattern1::entry, pattern2::entry)
-    return (pattern1.location == pattern2.location) && (pattern1.type == pattern2.type) && (pattern1.index == pattern2.index)
+function ==(pattern1::Vector{entry}, pattern2::Vector{entry})
+    a = pattern1[sortperm(map(x->x.location, pattern1))]
+    b = pattern2[sortperm(map(x->x.location, pattern2))]
+    return all(map((x,y) -> x.type == y.type, a,b))
 end
