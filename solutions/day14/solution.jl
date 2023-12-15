@@ -96,7 +96,9 @@ function roll_pattern(pattern::Vector{entry}, dir_x::Int, reverse::Bool=false)
     return output
 end
 
-function shake_pattern(pattern::Vector{entry})
+using Memoize
+
+@memoize function shake_pattern(pattern::Vector{entry})
     output = deepcopy(pattern)
     output = roll_pattern(output, 2)
     output = roll_pattern(output, 1)
@@ -129,6 +131,7 @@ function evolve_pattern(pattern::Vector{entry})
 end
 
 import Base: +
+import Base: ==
 
 Base.print(pattern::Vector{entry}) = print_pattern(pattern)
 function +(pattern::Vector{entry}, n::Int)
@@ -136,4 +139,8 @@ function +(pattern::Vector{entry}, n::Int)
         pattern = shake_pattern(pattern)
     end
     return pattern
+end
+
+function ==(pattern1::entry, pattern2::entry)
+    return (pattern1.location == pattern2.location) && (pattern1.type == pattern2.type) && (pattern1.index == pattern2.index)
 end
