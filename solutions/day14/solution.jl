@@ -112,6 +112,28 @@ function print_pattern(pattern::Vector{entry})
         index = sortperm(map(x->x.location, line))
         line = line[index]
         type = map(x->print_dict[x.type], line)
-        println(type)
+        println(join(type))
     end
+end
+
+function evolve_pattern(pattern::Vector{entry})
+    output = deepcopy(pattern)
+    new_output = shake_pattern(deepcopy(pattern))
+    # while !all(map((x,y)->(x.location==y.location), new_output, output))
+    for i in 1:20
+        temp_output = shake_pattern(new_output)
+        output = new_output
+        new_output = temp_output
+    end
+    return new_output
+end
+
+import Base: +
+
+Base.print(pattern::Vector{entry}) = print_pattern(pattern)
+function +(pattern::Vector{entry}, n::Int)
+    for i in 1:n
+        pattern = shake_pattern(pattern)
+    end
+    return pattern
 end
