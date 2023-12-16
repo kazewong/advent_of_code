@@ -1,5 +1,5 @@
-# data = readlines("./solutions/day16/input.txt")
-data = readlines("./solutions/day16/test_input.txt")
+data = readlines("./solutions/day16/input.txt")
+# data = readlines("./solutions/day16/test_input.txt")
 
 tile_type = Dict{Char,Int}('.' => 0, '/' => 1, '\\' => 2, '-' => 3, '|' => 4)
 
@@ -9,7 +9,7 @@ struct tile
 end
 
 struct ray
-    location_history::Vector{Vector{Int}}
+    location::Vector{Int}
     direction::Vector{Int}
 end
 
@@ -23,48 +23,103 @@ function parse_data(data::Vector{String})
     return output
 end
 
-grid = parse_data(data)
-
-inital_ray = ray([[1, 1]], [1, 0])
-# Part 1
-
-function propagate_ray!(input_ray::ray, grid::Dict{Vector{Int},tile})
-    grid_x = [minimum([key[1] for key in keys(grid)]), maximum([key[1] for key in keys(grid)])]
-    grid_y = [minimum([key[2] for key in keys(grid)]), maximum([key[2] for key in keys(grid)])]
-    ray_location = input_ray.location_history[end]
-    grid[ray_location] = tile(true, grid[ray_location].type)
-    ray_direction = input_ray.direction
-    new_ray_location = ray_location + ray_direction
-    if new_ray_location[1] < grid_x[1] || new_ray_location[1] > grid_x[2] || new_ray_location[2] < grid_y[1] || new_ray_location[2] > grid_y[2]
-        return
-    end
-    while new_ray_location ∉ input_ray.location_history
-        push!(input_ray.location_history, new_ray_location)
-        grid[new_ray_location] = tile(true, grid[new_ray_location].type)
-        if grid[new_ray_location].type == 1
-            input_ray = ray(input_ray.location_history, [-ray_direction[2], -ray_direction[1]])
-        elseif grid[new_ray_location].type == 2
-            input_ray = ray(input_ray.location_history, [ray_direction[2], ray_direction[1]])
-        elseif grid[new_ray_location].type == 3
-            if ray_direction[1] == 0
-                input_ray = ray(input_ray.location_history, [ray_direction[2], 0])
-                split_ray = ray([ray_location], [-ray_direction[2], 0])
-                propagate_ray!(split_ray, grid)
-            end
-        elseif grid[new_ray_location].type == 4
-            if ray_direction[2] == 0
-                input_ray = ray(input_ray.location_history, [0, ray_direction[1]])
-                split_ray = ray([ray_location], [0, -ray_direction[1]])
-                propagate_ray!(split_ray, grid)
+function print_grid(grid::Dict{Vector{Int},tile})
+    grid_x = [1, maximum([key[1] for key in keys(grid)])-1]
+    grid_y = [1, maximum([key[2] for key in keys(grid)])-1]
+    for y in grid_y[1]:grid_y[2]
+        for x in grid_x[1]:grid_x[2]
+            if grid[[x, y]].energized
+                print('#')
+            else
+                print('.')
             end
         end
-        ray_location = input_ray.location_history[end]
-        ray_direction = input_ray.direction
-        new_ray_location = ray_location + ray_direction
-        if new_ray_location[1] < grid_x[1] || new_ray_location[1] > grid_x[2] || new_ray_location[2] < grid_y[1] || new_ray_location[2] > grid_y[2]
-            break
-        end
+        print('\n')
     end
 end
 
-propagate_ray!(inital_ray, grid)
+# Part 1
+
+data_length = length(data)
+line_length = length(data[1])
+
+function propagate_ray(input_ray::ray, grid::Dict{Vector{Int},tile}, history::Vector{Vector{Int}}=Vector{Vector{Int}}(), size::Tuple{Int,Int}=(line_length, data_length))
+    local_grid = copy(grid)
+    grid_x = [1, size[1]]
+    grid_y = [1, size[2]]
+    ray_location = input_ray.location
+    ray_direction = input_ray.direction
+    local_grid[ray_location] = tile(true, local_grid[ray_location].type)
+    while [ray_location...,ray_direction...] ∉ history
+        push!(history, [ray_location..., ray_direction...])
+        ray_location = ray_location + ray_direction
+        if ray_location[1] < grid_x[1] || ray_location[1] > grid_x[2] || ray_location[2] < grid_y[1] || ray_location[2] > grid_y[2]
+            break
+        end
+        local_grid[ray_location] = tile(true, local_grid[ray_location].type)
+        if local_grid[ray_location].type == 1
+            ray_direction = [-ray_direction[2], -ray_direction[1]]
+        elseif local_grid[ray_location].type == 2
+            ray_direction = [ray_direction[2], ray_direction[1]]
+        elseif local_grid[ray_location].type == 3
+            if ray_direction[1] == 0
+                split_ray = ray(ray_location, [-ray_direction[2], 0])
+                ray_direction = [ray_direction[2], 0]
+                local_grid = propagate_ray(split_ray, local_grid, history)
+            end
+        elseif local_grid[ray_location].type == 4
+            if ray_direction[2] == 0
+                split_ray = ray(ray_location, [0, -ray_direction[1]])
+                ray_direction = [0, ray_direction[1]]
+                local_grid = propagate_ray(split_ray, local_grid, history)
+            end
+        end
+    end
+    return local_grid
+end
+
+grid = parse_data(data)
+grid[[0, 1]] = tile(false, 0)
+inital_ray = ray([0, 1], [1, 0])
+new_grid = propagate_ray(inital_ray, grid)
+print_grid(new_grid)
+
+part1_ans = count(tile -> tile.energized, values(new_grid)) - 1
+
+# Part 2
+
+function test_entrace(location::Vector{Int}, direction::Vector{Int}, grid::Dict{Vector{Int},tile})
+    local_grid = copy(grid)
+    local_grid[location] = tile(true, 0)
+    inital_ray = ray(location, direction)
+    new_grid = propagate_ray(inital_ray, local_grid)
+    return count(tile -> tile.energized, values(new_grid)) - 1
+end
+
+grid = parse_data(data)
+max_count = -1
+for i in 1:length(data)
+    count = test_entrace([0, i], [1, 0], grid)
+    if count > max_count
+        max_count = count
+        println(max_count)
+    end
+    count = test_entrace([11, i], [-1, 0], grid)
+    if count > max_count
+        max_count = count
+        println(max_count)
+    end
+end
+
+for i in 1:length(data[1])
+    count = test_entrace([i, 0], [0, 1], grid)
+    if count > max_count
+        max_count = count
+        println(max_count)
+    end
+    count = test_entrace([i, 111], [0, -1], grid)
+    if count > max_count
+        max_count = count
+        println(max_count)
+    end
+end
