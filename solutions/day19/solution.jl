@@ -57,3 +57,30 @@ function parse_data(data::Vector{String})
 end
 
 workflows, parts = parse_data(data)
+
+# Part 1
+
+function evaluate_workflow(part::Dict{String, Int}, workflow::Workflow)
+    for condition in workflow.conditions
+        if condition(part) != false
+            return condition(part)
+        end
+    end
+end
+
+function propagate_part(part::Dict{String, Int}, workflows::Dict{String, Workflow})
+    label = "in"
+    while label != "A" && label != "R"
+        label = evaluate_workflow(part, workflows[label])
+    end
+    if label == "A"
+        return sum(values(part))
+    else
+        return 0
+    end
+end
+
+part1_ans = sum(map(x-> propagate_part(x, workflows), parts))
+
+# Part 2
+
