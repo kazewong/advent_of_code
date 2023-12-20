@@ -135,3 +135,35 @@ pulse_counter = Dict{Bool, Int}(false=>0, true=>0)
 for i in 1:1000
     modules, pulse_counter = push_botton(modules, pulse_counter)
 end
+
+cycle_dependenies = ["sx", "jt", "kb", "ks"]
+
+function cycle_detector(label::String, modules::Dict{String, Modules})
+    local_modules = deepcopy(modules)
+    counter = 0
+    initial_state = modules[label].state
+    detector = true
+    while detector
+        counter +=1
+        pq = PriorityQueue{Message, Int}()
+        message = Message("button", local_modules["broadcaster"].label, false, 0)
+        pq[message] = message.priority
+        while length(pq) > 0
+            message = dequeue!(pq)
+            if message.output in keys(local_modules)
+                new_message = process_message!(message, local_modules[message.output])
+                for m in new_message
+                    if m.output in keys(local_modules)
+                        enqueue!(pq, m, m.priority)
+                    end                  
+                end
+            end
+        end
+        if local_modules[label].state == initial_state
+            detector = false
+        end
+    end
+    return counter
+end
+
+part2_ans = check_rx(modules)
