@@ -7,6 +7,7 @@ abstract type Modules end
 
 mutable struct Broadcaster <: Modules
     label::String
+    state::Bool
     output_label::Vector{String}
 end
 
@@ -38,7 +39,7 @@ function parse_data(data::Vector{String})
         elseif '&' in label
             modules[label[2:end]] = Conjunction(label[2:end], Dict{String,Bool}(), split(outputs, ", "))
         else
-            modules[label] = Broadcaster(label, split(outputs, ", "))
+            modules[label] = Broadcaster(label, false, split(outputs, ", "))
         end
     end
     for (label, local_module) in modules
@@ -129,41 +130,68 @@ end
 
 modules = parse_data(data)
 pulse_counter = Dict{Bool, Int}(false=>0, true=>0)
-# modules, pulse_counter = push_botton(modules, pulse_counter)
+modules, pulse_counter = push_botton(modules, pulse_counter)
 
 # Brute force is fast anyway YOLO
-for i in 1:1000
-    modules, pulse_counter = push_botton(modules, pulse_counter)
-end
+# for i in 1:1000
+#     modules, pulse_counter = push_botton(modules, pulse_counter)
+# end
 
 cycle_dependenies = ["sx", "jt", "kb", "ks"]
 
+function find_subgraph(label::String, modules::Dict{String, Modules})
+    labels = [label]
+    modules_list = collect(values(modules))
+    subgraph = Dict{String, Modules}()
+    output_labels = getfield.(modules_list, :output_label)
+    searching = true
+    while searching
+        for y in labels
+            new_labels = modules_list[map(x->y in x, output_labels)]
+            if length(new_labels) == 0
+                searching = false
+            end
+            for new_label in new_labels
+                if !(new_label.label in labels)
+                    push!(labels, new_label.label)
+                end
+            end
+        end
+    end
+    for label in labels
+        subgraph[label] = modules[label]
+    end
+    return subgraph
+end
+
 function cycle_detector(label::String, modules::Dict{String, Modules})
     local_modules = deepcopy(modules)
+    sub_modules = find_subgraph(label, local_modules)
     counter = 0
-    initial_state = modules[label].state
+    initial_state = deepcopy(getfield.(values(sub_modules), :state))
     detector = true
     while detector
         counter +=1
         pq = PriorityQueue{Message, Int}()
-        message = Message("button", local_modules["broadcaster"].label, false, 0)
+        message = Message("button", sub_modules["broadcaster"].label, false, 0)
         pq[message] = message.priority
         while length(pq) > 0
             message = dequeue!(pq)
-            if message.output in keys(local_modules)
-                new_message = process_message!(message, local_modules[message.output])
+            if message.output in keys(sub_modules)
+                new_message = process_message!(message, sub_modules[message.output])
                 for m in new_message
-                    if m.output in keys(local_modules)
+                    if m.output in keys(sub_modules)
                         enqueue!(pq, m, m.priority)
                     end                  
                 end
             end
         end
-        if local_modules[label].state == initial_state
+        if getfield.(values(sub_modules), :state) == initial_state
             detector = false
         end
     end
     return counter
 end
 
-part2_ans = check_rx(modules)
+cycles = map(x->cycle_detector(x, modules), cycle_dependenies)
+part2_ans = prod(cycles)
