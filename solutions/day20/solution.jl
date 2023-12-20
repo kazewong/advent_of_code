@@ -130,14 +130,14 @@ end
 
 modules = parse_data(data)
 pulse_counter = Dict{Bool, Int}(false=>0, true=>0)
-modules, pulse_counter = push_botton(modules, pulse_counter)
+# modules, pulse_counter = push_botton(modules, pulse_counter)
 
 # Brute force is fast anyway YOLO
-# for i in 1:1000
-#     modules, pulse_counter = push_botton(modules, pulse_counter)
-# end
+for i in 1:1000
+    modules, pulse_counter = push_botton(modules, pulse_counter)
+end
 
-cycle_dependenies = ["sx", "jt", "kb", "ks"]
+part1_ans = prod(values(pulse_counter))
 
 function find_subgraph(label::String, modules::Dict{String, Modules})
     labels = [label]
@@ -193,5 +193,10 @@ function cycle_detector(label::String, modules::Dict{String, Modules})
     return counter
 end
 
+
+cycle_dependenies = ["sx", "jt", "kb", "ks"]
+modules = parse_data(data)
+pulse_counter = Dict{Bool, Int}(false=>0, true=>0)
+modules, pulse_counter = push_botton(modules, pulse_counter)
 cycles = map(x->cycle_detector(x, modules), cycle_dependenies)
 part2_ans = prod(cycles)
