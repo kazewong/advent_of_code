@@ -1,5 +1,7 @@
-# data = readlines("./solutions/day20/input.txt")
-data = readlines("./solutions/day20/test_input.txt")
+using DataStructures
+
+data = readlines("./solutions/day20/input.txt")
+# data = readlines("./solutions/day20/test_input.txt")
 
 abstract type Modules end
 
@@ -18,6 +20,13 @@ mutable struct Conjunction <: Modules
     label::String
     state::Dict{String,Bool}
     output_label::Vector{String}
+end
+
+struct Message
+    input::String
+    output::String
+    high_low::Bool
+    priority::Int
 end
 
 function parse_data(data::Vector{String})
@@ -52,67 +61,77 @@ end
 
 high_low_dict = Dict{Bool, String}(false=>"low", true=>"high")
 
-function receive_pulse!(input_label::String, pulse::Bool, local_module::Broadcaster, modules::Dict{String, Modules}, counter::Dict{Bool, Int})
+function process_message!(message::Message, local_module::Broadcaster)
+    result = Vector{Message}()
+    priority = message.priority + 1
     for output in local_module.output_label
-        counter[false] += 1
-        println("$(local_module.label) -low-> $output")
+        push!(result, Message(local_module.label, output, message.high_low, priority))
     end
-    for output in local_module.output_label
-        if output in keys(modules)
-            receive_pulse!(local_module.label, false, modules[output], modules, counter)
-        end
-    end
+    return result
 end
 
-function receive_pulse!(input_label::String, pulse::Bool, local_module::FilpFlop, modules::Dict{String, Modules}, counter::Dict{Bool, Int})
-    if !pulse
+function process_message!(message::Message, local_module::FilpFlop)
+    result = Vector{Message}()
+    priority = message.priority + 1
+    if !message.high_low
         local_module.state = !local_module.state
         for output in local_module.output_label
-            counter[local_module.state] += 1
-            println("$(local_module.label) -$(high_low_dict[local_module.state])-> $output")
-        end
-        for output in local_module.output_label
-            if output in keys(modules)
-                receive_pulse!(local_module.label, local_module.state, modules[output], modules, counter)
-            end
+            push!(result, Message(local_module.label, output, local_module.state, priority))
         end
     end
+    return result
 end
 
-function receive_pulse!(input_label::String, pulse::Bool, local_module::Conjunction, modules::Dict{String, Modules}, counter::Dict{Bool, Int})
-    local_module.state[input_label] = pulse
+function process_message!(message::Message, local_module::Conjunction)
+    result = Vector{Message}()
+    priority = message.priority + 1
+    local_module.state[message.input] = message.high_low
     if all(values(local_module.state))
         for output in local_module.output_label
-            counter[false] += 1
-            println("$(local_module.label) -low-> $output")
-        end
-        for output in local_module.output_label
-            if output in keys(modules)
-                receive_pulse!(local_module.label, false, modules[output], modules, counter)
-            end
+            push!(result, Message(local_module.label, output, false, priority))
         end
     else
         for output in local_module.output_label
-            counter[true] += 1
-            println("$(local_module.label) -high-> $output")
-        end
-        for output in local_module.output_label
-            if output in keys(modules)
-                receive_pulse!(local_module.label, true, modules[output], modules, counter)
-            end
+            push!(result, Message(local_module.label, output, true, priority))
         end
     end
+    return result
 end
-
 
 function push_botton(modules::Dict{String, Modules}, counter::Dict{Bool, Int})
     local_modules = deepcopy(modules)
+    pq = PriorityQueue{Message, Int}()
     counter[false] += 1
-    println("button -low-> $(local_modules["broadcaster"].label)")
-    receive_pulse!("button", false, local_modules["broadcaster"], modules, counter)
-    return counter
+    message = Message("button", local_modules["broadcaster"].label, false, 0)
+    pq[message] = message.priority
+    while length(pq) > 0
+        message = dequeue!(pq)
+
+        # println("$(message.input) -$(high_low_dict[message.high_low])-> $(message.output)")
+
+        if message.output in keys(local_modules)
+            new_message = process_message!(message, local_modules[message.output])
+            for m in new_message
+                println("$(m.input) -$(high_low_dict[m.high_low])-> $(m.output)")
+                if m.output in keys(local_modules)
+                    enqueue!(pq, m, m.priority)
+                end
+                if m.high_low
+                    counter[true] += 1
+                else
+                    counter[false] += 1
+                end
+            end
+        end
+    end
+    return local_modules, counter
 end
 
 modules = parse_data(data)
-counter = Dict{Bool, Int}(false=>0, true=>0)
-push_botton(modules, counter)
+pulse_counter = Dict{Bool, Int}(false=>0, true=>0)
+# modules, pulse_counter = push_botton(modules, pulse_counter)
+
+# Brute force is fast anyway YOLO
+for i in 1:1000
+    modules, pulse_counter = push_botton(modules, pulse_counter)
+end
