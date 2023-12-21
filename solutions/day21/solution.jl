@@ -154,3 +154,7 @@ n = 26501365÷131
 
 part2_ans = a*n^2 + b*n + c
 
+using Printf
+@printf("Part 1 answer: %d\n", part1_ans)
+@printf("Part 2 answer: %d\n", part2_ans)
+
