@@ -122,5 +122,5 @@ end
 
 grid, starting_point = parse_data(data)
 # grid[starting_point].reachable = true
-cycles = cycle_detector(grid, CartesianIndex((2,2)))
-reach = reach_cycle_detector(grid, CartesianIndex((3,1)), CartesianIndex((3,11)))
+cycles = cycle_detector(grid, CartesianIndex((11,11)))
+reach = map(x->reach_cycle_detector(grid, CartesianIndex((1,1)), CartesianIndex((x,1))), 1:11)
