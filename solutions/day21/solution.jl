@@ -1,6 +1,6 @@
 
-data = readlines("./solutions/day21/input.txt")
-# data = readlines("./solutions/day21/test_input.txt")
+# data = readlines("./solutions/day21/input.txt")
+data = readlines("./solutions/day21/test_input.txt")
 
 mutable struct Tile
     type::Bool
@@ -60,9 +60,67 @@ function propagate_and_count(grid::Dict{CartesianIndex{2}, Tile}, step::Int, sta
     for i in 1:step
         propagate_grid!(grid)
     end
-    return count(x -> x[2].reachable, grid)
+    return count(x -> x[2].reachable, grid), grid
 end
 
 grid, starting_point = parse_data(data)
 print_grid(grid)
-part1_ans = propagate_and_count(grid, 64, starting_point)
+part1_ans, new_grid = propagate_and_count(grid, 64, starting_point)
+
+# Part 2
+
+import Base: +
+import Base: ==
+
+function +(grid::Dict{CartesianIndex{2}, Tile}, n::Int)
+    grid = deepcopy(grid)
+    for i in 1:n
+        propagate_grid!(grid)
+    end
+    return grid
+end
+
+function compare_grid(grid1::Dict{CartesianIndex{2}, Tile}, grid2::Dict{CartesianIndex{2}, Tile})
+    return all(x -> x[2].reachable == grid2[x[1]].reachable, grid1)
+end
+
+function ==(grid1::Dict{CartesianIndex{2}, Tile}, grid2::Dict{CartesianIndex{2}, Tile})
+    return compare_grid(grid1, grid2)
+end
+
+function fill_cycle_detector(grid::Dict{CartesianIndex{2}, Tile}, starting_point::CartesianIndex{2})
+    grid = deepcopy(grid)
+    grid[starting_point].reachable = true
+    temp_grid = Vector{Dict{CartesianIndex{2}, Tile}}()
+    push!(temp_grid, grid)
+    loop = true
+    while loop
+        grid = grid + 1
+        if grid in temp_grid
+            loop = false
+        end
+        push!(temp_grid, grid)
+    end
+    return length(temp_grid)-2
+end
+
+function reach_cycle_detector(grid::Dict{CartesianIndex{2}, Tile}, starting_point::CartesianIndex{2}, end_point::CartesianIndex{2})
+    grid = deepcopy(grid)
+    grid[starting_point].reachable = true
+    counter = 0
+    loop = true
+    while loop
+        counter = counter + 1
+        grid = grid + 1
+        if grid[end_point].reachable
+            loop = false
+        end
+    end
+    return counter
+end
+    
+
+grid, starting_point = parse_data(data)
+# grid[starting_point].reachable = true
+cycles = cycle_detector(grid, CartesianIndex((2,2)))
+reach = reach_cycle_detector(grid, CartesianIndex((3,1)), CartesianIndex((3,11)))
