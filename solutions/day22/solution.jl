@@ -43,19 +43,19 @@ end
 function collapse_bricks(bricks::Vector{Brick})
     sort_bricks = bricks[sortperm(bricks, by=x->x.start_point[3])]
     for (index, brick) in enumerate(sort_bricks[2:end])
-        supported = any(map(x->check_support(x,brick), sort_bricks[1:index+1]))
+        supported = any(map(x->check_support(x,brick), sort_bricks[1:index]))
         if !supported
-            println("Brick $(index) is not supported")
-            for (index2, brick2) in enumerate(sort_bricks[end:-1:1])
-                start_point = CartesianIndex((brick.start_point[1], brick.start_point[2], minimum([brick.start_point[3],brick2.end_point[3]+1])))
-                end_point = CartesianIndex((brick.end_point[1], brick.end_point[2], brick.end_point[3]-brick.start_point[3]+minimum([brick.start_point[3],brick2.end_point[3]+1])))
+            # println("Brick $(index) is not supported")
+            for (index2, brick2) in enumerate(sort_bricks[index:-1:1])
+                start_point = CartesianIndex((brick.start_point[1], brick.start_point[2], minimum([brick.start_point[3], brick2.end_point[3]+1])))
+                end_point = CartesianIndex((brick.end_point[1], brick.end_point[2], brick.end_point[3]-brick.start_point[3]+minimum([brick.start_point[3], brick2.end_point[3]+1])))
                 sort_bricks[index+1] = Brick(sort_bricks[index+1].index, start_point, end_point, [], [])
                 if any(map(x->check_support(x,sort_bricks[index+1]), sort_bricks))
                     break
                 end
             end
         end
-        # sort_bricks = sort_bricks[sortperm(sort_bricks, by=x->x.start_point[3])]
+        sort_bricks = sort_bricks[sortperm(sort_bricks, by=x->x.start_point[3])]
     end
     return sort_bricks
 end
@@ -72,14 +72,14 @@ function support_structure(bricks::Vector{Brick})
         target_indices = getfield.(filter(x->check_support(brick, x), new_bricks), :index)
         brick.support = target_indices
         for target_index in target_indices
-            push!(new_bricks[target_index].supported_by, brick.index)
+            push!(filter(x->x.index==target_index,new_bricks)[1].supported_by, brick.index)
         end
     end
     return new_bricks
 end
 
 function check_disintegrate(index::Int, bricks::Vector{Brick})
-    for brick_index in bricks[index].support
+    for brick_index in filter(x->x.index==index,bricks)[1].support
         brick = filter(x->x.index==brick_index, bricks)[1]
         if length(brick.supported_by) == 1
             return false
@@ -91,4 +91,4 @@ end
 bricks = parse_data(data)
 collapsed_bricks = collapse_bricks(bricks)
 collapsed_bricks = support_structure(collapsed_bricks)
-part1_ans = sum(map(x->check_disintegrate(x, collapsed_bricks), 1:length(collapsed_bricks)))
+part1_ans = sum(map(x->check_disintegrate(x, collapsed_bricks), 1:length(collapsed_bricks)))-1
