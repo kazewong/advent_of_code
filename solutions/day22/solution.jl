@@ -1,5 +1,5 @@
-data = readlines("./solutions/day22/input.txt")
-# data = readlines("./solutions/day22/test_input.txt")
+# data = readlines("./solutions/day22/input.txt")
+data = readlines("./solutions/day22/test_input.txt")
 
 # I checked there are no high z to low z bricks or 3D bricks
 
@@ -91,4 +91,22 @@ end
 bricks = parse_data(data)
 collapsed_bricks = collapse_bricks(bricks)
 collapsed_bricks = support_structure(collapsed_bricks)
-part1_ans = sum(map(x->check_disintegrate(x, collapsed_bricks), 1:length(collapsed_bricks)))-1
+part1_ans = sum(map(x->check_disintegrate(x, collapsed_bricks), 1:length(collapsed_bricks)))
+
+# Part 2
+
+function chain_reaction(index::Int, bricks::Vector{Brick})
+    result = 0
+    for brick_index in filter(x->x.index==index,bricks)[1].support
+        println(brick_index)
+        brick = filter(x->x.index==brick_index, bricks)[1]
+        if length(brick.supported_by) == 1
+            result += chain_reaction(brick_index, bricks)
+        else
+            result += 1
+        end
+    end
+    return result
+end
+
+part2_ans = sum(map(x->chain_reaction(x, collapsed_bricks), 2:length(collapsed_bricks)))
