@@ -1,5 +1,8 @@
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+Clp = "e2554f3b-3117-50c0-817c-e040a3ddf72d"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 Memoize = "c03570c3-d221-55d1-a50c-7939bbd78826"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
