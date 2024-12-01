@@ -6,7 +6,7 @@ fn read_input(str: String) -> Vec<String> {
     result.lines().map(|s| s.to_string()).collect()
 }
 
-fn split_and_sort(input: Vec<String>) -> [Vec<i64>; 2] {
+fn split_string(input: Vec<String>) -> [Vec<i64>; 2] {
     let mut first_column: Vec<i64> = Vec::new();
     let mut second_column: Vec<i64> = Vec::new();
     for line in input {
@@ -43,6 +43,6 @@ fn main(){
     let input = read_input(args().nth(1).unwrap());
     println!("Input: --------");
     println!("{:?}", input);
-    println!("The answer to part 1 is: {}", part1(split_and_sort(input.clone())));
-    println!("The answer to part 2 is: {}", part2(split_and_sort(input)));
+    println!("The answer to part 1 is: {}", part1(split_string(input.clone())));
+    println!("The answer to part 2 is: {}", part2(split_string(input)));
 }
