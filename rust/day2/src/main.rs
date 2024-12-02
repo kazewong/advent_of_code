@@ -65,9 +65,7 @@ fn part2(input: Vec<String>) -> i32 {
 }
 
 fn main() {
-    // let input = read_input(args().nth(1).unwrap());
-    let input = read_input("../asset/day2/data.txt".to_string());
-    // let input = read_input("../asset/day2/test.txt".to_string());
+    let input = read_input(args().nth(1).unwrap());
     println!("Input: --------");
     println!("{:?}", input);
     println!("The answer to part 1 is: {}", part1(input.clone()));
