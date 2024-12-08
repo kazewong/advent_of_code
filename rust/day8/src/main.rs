@@ -50,7 +50,35 @@ fn part1(input: Vec<String>) -> i32 {
 }
 
 fn part2(input: Vec<String>) -> i32{
-    0
+    let original_map = parse_map(input);
+    let (map_xmin, map_xmax, map_ymin, map_ymax) = (original_map.keys().map(|(x, _)| x).min().unwrap(), original_map.keys().map(|(x, _)| x).max().unwrap(), original_map.keys().map(|(_, y)| y).min().unwrap(), original_map.keys().map(|(_, y)| y).max().unwrap());
+    let mut map = original_map.clone();
+    let unique_entry = original_map.values().collect::<Vec<&char>>().into_iter().unique().filter(|&v| *v != '.').collect::<Vec<&char>>();
+    for entry in unique_entry {
+        let matched_entries = original_map.iter().filter(|(_, v)| *v == entry).collect::<Vec<(&(i32,i32), &char)>>();
+        for i in 0..matched_entries.len(){
+            for j in 0..i {
+                let (dx, dy) = (matched_entries[j].0.0 - matched_entries[i].0.0, matched_entries[j].0.1 - matched_entries[i].0.1);
+                let mut new_coord1 = (matched_entries[j].0.0, matched_entries[j].0.1);
+                let mut new_coord2 = (matched_entries[i].0.0, matched_entries[i].0.1);
+                while original_map.contains_key(&new_coord1) {
+                    map.entry(new_coord1).and_modify(|e| *e = '#');
+                    new_coord1 = (new_coord1.0 + dx, new_coord1.1 + dy);
+                }
+                while original_map.contains_key(&new_coord2) {
+                    map.entry(new_coord2).and_modify(|e| *e = '#');
+                    new_coord2 = (new_coord2.0 - dx, new_coord2.1 - dy);
+                }
+            }
+        }
+    }
+    for i in 0..*map_xmax+1{
+        for j in 0..*map_ymax+1{
+            print!("{}", map.get(&(i,j)).unwrap());
+        }
+        println!();
+    }
+    map.values().filter(|&v| *v == '#').count() as i32
 }
 
 fn main(){
