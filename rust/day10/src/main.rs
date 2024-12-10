@@ -55,8 +55,39 @@ fn part1(input: Vec<String>) -> i32 {
     result
 }
 
+fn trace_path_part_2(map: &HashMap<(i32,i32), i32>, start: (i32,i32)) -> i32 {
+    let mut n_heads = 0;
+
+    let mut stack = Vec::new();
+
+    stack.push(start);
+
+    while let Some((x,y)) = stack.pop(){
+        for (dx, dy) in vec![(0,1), (0,-1), (1,0), (-1,0)]{
+            let new_x = x + dx;
+            let new_y = y + dy;
+            if map.contains_key(&(new_x, new_y)){
+                if *map.get(&(new_x, new_y)).unwrap() - 1 == *map.get(&(x,y)).unwrap(){
+                    stack.push((new_x, new_y));
+                }
+            }
+        }
+        let value = map.get(&(x,y)).unwrap();
+        if *value == 9{
+            n_heads += 1;
+        }
+    }
+    n_heads
+}
+
 fn part2(input: Vec<String>) -> i32{
-    0
+    let mut result = 0;
+    let map = parse_map(input);
+    let start = map.iter().filter(|(_, &v)| v == 0).collect::<Vec<(&(i32,i32), &i32)>>();
+    for (k,_) in start{
+        result += trace_path_part_2(&map, *k);
+    }
+    result
 }
 
 fn main(){
